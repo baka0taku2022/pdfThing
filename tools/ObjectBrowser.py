@@ -20,6 +20,7 @@ class ObjectBrowser:
         self.lzw_var = StringVar()
         self.jbig2_var = StringVar()
         self.ccitt_fax_var = StringVar()
+        self.dct_var = StringVar()
         self.current_header: bytes = b''
         self.current_object: bytes = b''
         self.raw_object_body: bytes = b''
@@ -64,6 +65,8 @@ class ObjectBrowser:
         self.ccitt_fax = Label(master=self.top, textvariable=self.ccitt_fax_var, relief=SUNKEN, width=20)
         self.obfuscated_label = Label(master=self.top, text="Obfuscated?")
         self.obfuscated = Label(master=self.top, textvariable=self.obfuscated_var, relief=SUNKEN, width=20)
+        self.dct_label = Label(master=self.top, text="DCTDecode?")
+        self.dct = Label(master=self.top, textvariable=self.dct_var, relief=SUNKEN, width=20)
         self.raw_header_button = Button(master=self.top, text="Raw Object Header",
                                         command=self.raw_header_button_handler)
         self.save_body_button = Button(master=self.top, text="Save Object Body",
@@ -76,12 +79,14 @@ class ObjectBrowser:
         # place widgets
         self.pdf_version_label.grid(column=0, row=0, padx=5, pady=5)
         self.pdf_version.grid(column=1, row=0, padx=5, pady=5)
+        self.obfuscated_label.grid(column=2, row=0, padx=5, pady=5)
+        self.obfuscated.grid(column=3, row=0, padx=5, pady=5)
         self.obj_list.pack(side=LEFT, fill=BOTH)
         self.obj_list_scroll.pack(side=RIGHT, fill=BOTH)
         self.obj_list_label.grid(column=0, row=1, padx=5, pady=5)
-        self.obj_frame.grid(column=0, row=2, rowspan=7, padx=5, pady=5)
+        self.obj_frame.grid(column=0, row=2, rowspan=10, padx=5, pady=5)
         self.object_contents_label.grid(column=1, row=1, padx=5, pady=5)
-        self.content_frame.grid(column=1, row=1, rowspan=7, padx=5, pady=5)
+        self.content_frame.grid(column=1, row=1, rowspan=10, padx=5, pady=5)
         self.object_contents.pack(side=LEFT, fill=BOTH)
         self.object_contents_scroll.pack(side=RIGHT, fill=BOTH)
         self.object_type_label.grid(column=2, row=1, padx=5, pady=5)
@@ -102,11 +107,11 @@ class ObjectBrowser:
         self.jbig2.grid(column=3, row=8, padx=5, pady=5)
         self.ccitt_fax_label.grid(column=2, row=9, padx=5, pady=5)
         self.ccitt_fax.grid(column=3, row=9, padx=5, pady=5)
-        self.raw_header_button.grid(column=3, row=10, padx=5, pady=5)
-        self.save_body_button.grid(column=1, row=9, padx=5, pady=5)
-        self.raw_body_button.grid(column=1, row=8, padx=5, pady=5)
-        self.obfuscated_label.grid(column=2, row=0, padx=5, pady=5)
-        self.obfuscated.grid(column=3, row=0, padx=5, pady=5)
+        self.dct_label.grid(column=2, row=10, padx=5, pady=5)
+        self.dct.grid(column=3, row=10, padx=5, pady=5)
+        self.raw_header_button.grid(column=4, row=0, padx=5, pady=5)
+        self.save_body_button.grid(column=4, row=1, padx=5, pady=5)
+        self.raw_body_button.grid(column=4, row=2, padx=5, pady=5)
 
     def list_handle(self, event):
         try:
@@ -149,6 +154,8 @@ class ObjectBrowser:
                         pdf_object.jbig2_decode_action()
                     elif filter_text.find(b'/CCITTFaxDecode') != -1:
                         pdf_object.ccitt_fax_decode_action()
+                    elif filter_text.find(b'/DCTDecode') != -1:
+                        pdf_object.dct_decode_action()
         try:
             # set stringvars
             self.object_type_var.set(pdf_object.object_type)
@@ -160,6 +167,7 @@ class ObjectBrowser:
             self.lzw_var.set(str(pdf_object.lzw_decode))
             self.jbig2_var.set(str(pdf_object.jbig2_decode))
             self.ccitt_fax_var.set(str(pdf_object.ccitt_fax_decode))
+            self.dct_var.set(str(pdf_object.dct_decode))
             self.obfuscated_var.set(str(pdf_object.obfuscated))
 
             if pdf_object.decoded_stream != b'':

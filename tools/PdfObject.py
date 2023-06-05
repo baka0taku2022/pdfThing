@@ -21,6 +21,7 @@ class PdfObject:
         self.jbig2_decode: bool = False
         self.decoded_stream: bytes = b''
         self.ccitt_fax_decode: bool = False
+        self.dct_decode: bool = False
 
     def parse_object(self):
         self.object_header = self.raw_object[self.raw_object.find(b"<<") + 2: self.raw_object.find(b">>")]
@@ -71,7 +72,10 @@ class PdfObject:
             stream = stream.strip(b'\r\n')
         else:
             stream = self.decoded_stream
-        self.decoded_stream = binascii.unhexlify(stream.replace(b'>', b'').replace(b' ', b''))
+        stream = stream.replace(b' ', b'').replace(b'\r', b'').replace(b'\n', b'')
+        found = re.findall(b'[a-fA-F0-9]+>', stream)
+        stream = found[0].replace(b'>', b'')
+        self.decoded_stream = binascii.unhexlify(stream)
 
     def ascii_85_decode_action(self):
         # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
@@ -142,6 +146,9 @@ class PdfObject:
 
     def ccitt_fax_decode_action(self):
         self.ccitt_fax_decode = True
+
+    def dct_decode_action(self):
+        self.dct_decode = True
 
     def is_obfuscated(self):
         regex = b"#[a-fA-F0-9][a-fA-F0-9]"
