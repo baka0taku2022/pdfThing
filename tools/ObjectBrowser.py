@@ -161,5 +161,6 @@ class ObjectBrowser:
 
     def save_object_body_button_handler(self):
         file = asksaveasfile(mode="wb")
-        file.write(self.current_object)
-        file.close()
+        if file is not None:
+            file.write(self.current_object)
+            file.close()
