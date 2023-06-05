@@ -63,6 +63,7 @@ class PdfObject:
         self.decoded_stream = binascii.unhexlify(stream.replace(b'>', b'').replace(b' ', b''))
 
     def ascii_85_decode_action(self):
+        # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
         self.ascii_85_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]

@@ -3,7 +3,7 @@ from tkinter.filedialog import asksaveasfile
 from tkinter.messagebox import showinfo
 from tools.PdfFile import PdfFile
 from tools.PdfObject import PdfObject
-
+from tools.PdfObjectBody import PdfObjectBody
 
 class ObjectBrowser:
     def __init__(self, root: Tk, pdf_obj: PdfFile, title: str):
@@ -20,13 +20,14 @@ class ObjectBrowser:
         self.jbig2_var = StringVar()
         self.current_header: bytes = b''
         self.current_object: bytes = b''
+        self.raw_object_body: bytes = b''
 
         # define widgets
         self.pdf_version_label = Label(master=self.top, text="PDF Version")
         self.pdf_version = Label(master=self.top, text=self.pdf.version, relief=SUNKEN, width=20)
         self.obj_frame = Frame(master=self.top)
         self.obj_list_label = Label(master=self.top, text="Object ID")
-        self.obj_list = Listbox(master=self.obj_frame, height=30)
+        self.obj_list = Listbox(master=self.obj_frame, height=30, relief=SUNKEN)
         self.obj_list.bind(sequence='<<ListboxSelect>>', func=self.list_handle)
         self.obj_list_scroll = Scrollbar(master=self.obj_frame, orient=VERTICAL)
         self.obj_list.config(yscrollcommand=self.obj_list_scroll.set)
@@ -34,7 +35,7 @@ class ObjectBrowser:
         self.object_contents_label = Label(master=self.top, text="Object Contents")
         self.content_frame = Frame(master=self.top)
         self.object_contents = Text(master=self.content_frame, width=50, height=30, wrap='word',
-                                    state=DISABLED)
+                                    state=DISABLED, relief=SUNKEN)
         self.object_contents_scroll = Scrollbar(master=self.content_frame, orient=VERTICAL)
         self.object_contents.config(yscrollcommand=self.object_contents_scroll.set)
         self.object_contents_scroll.config(command=self.object_contents.yview)
@@ -61,6 +62,7 @@ class ObjectBrowser:
                                         command=self.raw_header_button_handler)
         self.save_body_button = Button(master=self.top, text="Save Object Body",
                                        command=self.save_object_body_button_handler)
+        self.raw_body_button = Button(master=self.top, text="Raw Object Body", command=self.raw_body_button_handler)
 
         # add objects to list
         self.obj_list.insert(END, *sorted(list(self.pdf.objects_dict.keys())))
@@ -93,7 +95,8 @@ class ObjectBrowser:
         self.jbig2_label.grid(column=2, row=8, padx=5, pady=5)
         self.jbig2.grid(column=3, row=8, padx=5, pady=5)
         self.raw_header_button.grid(column=3, row=9, padx=5, pady=5)
-        self.save_body_button.grid(column=2, row=9, padx=5, pady=5)
+        self.save_body_button.grid(column=1, row=9, padx=5, pady=5)
+        self.raw_body_button.grid(column=1, row=8, padx=5, pady=5)
 
     def list_handle(self, event):
         try:
@@ -152,6 +155,7 @@ class ObjectBrowser:
                 self.object_contents.configure(state=DISABLED)
                 self.current_object = pdf_object.object_body
             self.current_header = pdf_object.object_header
+            self.raw_object_body = pdf_object.object_body
 
         except UnboundLocalError:
             pass
@@ -164,3 +168,6 @@ class ObjectBrowser:
         if file is not None:
             file.write(self.current_object)
             file.close()
+
+    def raw_body_button_handler(self):
+        PdfObjectBody(self.raw_object_body, self.top)

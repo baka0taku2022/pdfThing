@@ -32,9 +32,9 @@ def ok_button_handler():
 entry_text = StringVar()
 # create widgets
 file_label = Label(master=root, text="Path to PDF")
-file_entry = Entry(master=root, width=50, textvariable=entry_text)
+file_entry = Entry(master=root, width=50, textvariable=entry_text, relief=SUNKEN)
 file_button = Button(master=root, text="Select File", command=file_button_handler)
-file_ok = Button(master=root, text="OK", width=50, command=ok_button_handler)
+file_ok = Button(master=root, text="Enter Object Browser", width=50, command=ok_button_handler)
 
 # place widgets
 file_label.grid(row=0, column=0, padx=10, pady=10)
