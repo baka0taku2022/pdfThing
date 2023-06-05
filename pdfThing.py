@@ -3,7 +3,7 @@ from tkinter import *
 from tools import PdfFile, ObjectBrowser
 
 # make root window
-program_title = "pdfThing 0.1"
+program_title = "pdfThing 0.2"
 root = Tk()
 root.title(program_title)
 
@@ -18,14 +18,15 @@ def file_button_handler():
 
 def ok_button_handler():
     if entry_text.get() is not None:
-        with open(entry_text.get(), "rb") as fh:
-            raw_bytes = fh.read()
-            pdf = PdfFile.PdfFile(raw_file=raw_bytes)
-            pdf.is_obfuscated()
-            if pdf.obfuscated:
-                pdf.deobfuscate()
-            pdf.get_structure()
-            ObjectBrowser.ObjectBrowser(root=root, pdf_obj=pdf, title=program_title)
+        try:
+            with open(entry_text.get(), "rb") as fh:
+                raw_bytes = fh.read()
+                fh.close()
+                pdf = PdfFile.PdfFile(raw_file=raw_bytes)
+                pdf.get_structure()
+                ObjectBrowser.ObjectBrowser(root=root, pdf_obj=pdf, title=program_title)
+        except FileNotFoundError:
+            pass
 
 
 # vars

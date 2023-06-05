@@ -10,6 +10,7 @@ class ObjectBrowser:
         self.top = Toplevel(master=root)
         self.top.title(title + " - Object Browser")
         self.pdf = pdf_obj
+        self.obfuscated_var = StringVar()
         self.object_type_var = StringVar()
         self.filter_var = StringVar()
         self.flate_var = StringVar()
@@ -61,6 +62,8 @@ class ObjectBrowser:
         self.jbig2 = Label(master=self.top, textvariable=self.jbig2_var, relief=SUNKEN, width=20)
         self.ccitt_fax_label = Label(master=self.top, text="CCITTFaxDecode?")
         self.ccitt_fax = Label(master=self.top, textvariable=self.ccitt_fax_var, relief=SUNKEN, width=20)
+        self.obfuscated_label = Label(master=self.top, text="Obfuscated?")
+        self.obfuscated = Label(master=self.top, textvariable=self.obfuscated_var, relief=SUNKEN, width=20)
         self.raw_header_button = Button(master=self.top, text="Raw Object Header",
                                         command=self.raw_header_button_handler)
         self.save_body_button = Button(master=self.top, text="Save Object Body",
@@ -73,13 +76,13 @@ class ObjectBrowser:
         # place widgets
         self.pdf_version_label.grid(column=0, row=0, padx=5, pady=5)
         self.pdf_version.grid(column=1, row=0, padx=5, pady=5)
-        self.obj_list.pack(side=LEFT)
+        self.obj_list.pack(side=LEFT, fill=BOTH)
         self.obj_list_scroll.pack(side=RIGHT, fill=BOTH)
         self.obj_list_label.grid(column=0, row=1, padx=5, pady=5)
-        self.obj_frame.grid(column=0, row=2, rowspan=5, padx=5, pady=5)
+        self.obj_frame.grid(column=0, row=2, rowspan=7, padx=5, pady=5)
         self.object_contents_label.grid(column=1, row=1, padx=5, pady=5)
-        self.content_frame.grid(column=1, row=2, rowspan=5, padx=5, pady=5)
-        self.object_contents.pack(side=LEFT)
+        self.content_frame.grid(column=1, row=1, rowspan=7, padx=5, pady=5)
+        self.object_contents.pack(side=LEFT, fill=BOTH)
         self.object_contents_scroll.pack(side=RIGHT, fill=BOTH)
         self.object_type_label.grid(column=2, row=1, padx=5, pady=5)
         self.object_type.grid(column=3, row=1, padx=5, pady=5)
@@ -102,6 +105,8 @@ class ObjectBrowser:
         self.raw_header_button.grid(column=3, row=10, padx=5, pady=5)
         self.save_body_button.grid(column=1, row=9, padx=5, pady=5)
         self.raw_body_button.grid(column=1, row=8, padx=5, pady=5)
+        self.obfuscated_label.grid(column=2, row=0, padx=5, pady=5)
+        self.obfuscated.grid(column=3, row=0, padx=5, pady=5)
 
     def list_handle(self, event):
         try:
@@ -123,7 +128,7 @@ class ObjectBrowser:
             if pdf_object.filter:
                 # extract filter section
                 raw_filters = pdf_object.object_header[pdf_object.object_header.find(b'/Filter') + 7:]
-                raw_filters = raw_filters.replace(b'\r\n', b' ')
+                raw_filters = raw_filters.replace(b'\r', b' ').replace(b'\n', b' ')
                 filters = raw_filters.split(b' ')
                 # decode filters
                 for filter_text in filters:
@@ -152,6 +157,7 @@ class ObjectBrowser:
             self.lzw_var.set(str(pdf_object.lzw_decode))
             self.jbig2_var.set(str(pdf_object.jbig2_decode))
             self.ccitt_fax_var.set(str(pdf_object.ccitt_fax_decode))
+            self.obfuscated_var.set(str(pdf_object.obfuscated))
 
             if pdf_object.decoded_stream != b'':
                 self.object_contents.configure(state=NORMAL)
