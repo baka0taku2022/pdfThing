@@ -36,7 +36,8 @@ class PdfObject:
             obj_type = obj_type[self.object_header.find(b'/Type') + 5:]
             obj_type = obj_type.strip(b' ')
             obj_type = obj_type[obj_type.find(b'/') + 1:]
-            obj_type = obj_type[:obj_type.find(b'/') + 1]
+            if obj_type[:obj_type.find(b'/') + 1] != b'':
+                obj_type = obj_type[:obj_type.find(b'/') + 1]
             obj_type.rstrip()
             self.object_type = obj_type
         else:

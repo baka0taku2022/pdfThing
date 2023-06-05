@@ -71,7 +71,7 @@ class ObjectBrowser:
         self.raw_body_button = Button(master=self.top, text="Raw Object Body", command=self.raw_body_button_handler)
 
         # add objects to list
-        self.obj_list.insert(END, *sorted(list(self.pdf.objects_dict.keys())))
+        self.obj_list.insert(END, *sorted(list(self.pdf.object_ids)))
 
         # place widgets
         self.pdf_version_label.grid(column=0, row=0, padx=5, pady=5)
@@ -119,9 +119,12 @@ class ObjectBrowser:
         selected_index: tuple = self.obj_list.curselection()
 
         if selected_index != ():
-            selected_text: str = self.obj_list.get(selected_index[0])
-            contents = self.pdf.objects_dict.get(selected_text)
-            pdf_object: PdfObject = PdfObject(raw_object=contents)
+            selected_text = self.obj_list.get(selected_index[0])
+            intro_size: int = len(selected_text)
+            obj_start = self.pdf.raw_bytes.find(bytes(selected_text))
+            obj = self.pdf.raw_bytes[obj_start + intro_size:]
+            obj = obj[:obj.find(b"endobj")]
+            pdf_object: PdfObject = PdfObject(raw_object=obj)
             pdf_object.parse_object()
             pdf_object.parse_header()
             pdf_object.check_filters()
