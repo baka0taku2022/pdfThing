@@ -18,6 +18,7 @@ class PdfObject:
         self.lzw_decode: bool = False
         self.jbig2_decode: bool = False
         self.decoded_stream: bytes = b''
+        self.ccitt_fax_decode: bool = False
 
     def parse_object(self):
         self.object_header = self.raw_object[self.raw_object.find(b"<<") + 2: self.raw_object.find(b">>")]
@@ -25,9 +26,9 @@ class PdfObject:
 
     def parse_header(self):
         # get object type from header
-        if self.object_header.replace(b'\r\n', b' ').find(b'/Type') != -1:
-            obj_type: bytes = self.object_header[self.object_header.find(b'/Type') + 7:]
-            obj_type = obj_type.strip(b'\r\n ')
+        if self.object_header.replace(b'\r', b' ').replace(b'\n', b' ').find(b'/Type') != -1:
+            obj_type: bytes = self.object_header.replace(b'\n', b' ').replace(b'\r', b' ')
+            obj_type = obj_type[self.object_header.find(b'/Type') + 7:]
             obj_type = obj_type[:obj_type.find(b' ')]
             self.object_type = obj_type
         else:
@@ -95,10 +96,38 @@ class PdfObject:
         self.decoded_stream = out
 
     def run_length_decode_action(self):
+        # https://github.com/euske/pdfminer/blob/master/pdfminer/runlength.py
         self.run_length_decode = True
+        if self.decoded_stream == b'':
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream
+        decoded = b''
+        i = 0
+        while i < len(stream):
+            # print('data[%d]=:%d:' % (i,ord(data[i])))
+            length = stream[i]
+            if length == 128:
+                break
+            if length >= 0 and length < 128:
+                run = stream[i + 1:(i + 1) + (length + 1)]
+                # print('length=%d, run=%s' % (length+1,run))
+                decoded += run
+                i = (i + 1) + (length + 1)
+            if length > 128:
+                run = stream[i + 1:i + 2] * (257 - length)
+                # print('length=%d, run=%s' % (257-length,run))
+                decoded += run
+                i = (i + 1) + 1
+        self.decoded_stream = decoded
 
     def lzw_decode_action(self):
         self.lzw_decode = True
 
     def jbig2_decode_action(self):
         self.jbig2_decode = True
+
+    def ccitt_fax_decode_action(self):
+        self.ccitt_fax_decode = True

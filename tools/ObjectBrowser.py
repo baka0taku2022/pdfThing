@@ -18,6 +18,7 @@ class ObjectBrowser:
         self.run_length_var = StringVar()
         self.lzw_var = StringVar()
         self.jbig2_var = StringVar()
+        self.ccitt_fax_var = StringVar()
         self.current_header: bytes = b''
         self.current_object: bytes = b''
         self.raw_object_body: bytes = b''
@@ -58,6 +59,8 @@ class ObjectBrowser:
         self.lzw = Label(master=self.top, textvariable=self.lzw_var, relief=SUNKEN, width=20)
         self.jbig2_label = Label(master=self.top, text="JBig2Decode?")
         self.jbig2 = Label(master=self.top, textvariable=self.jbig2_var, relief=SUNKEN, width=20)
+        self.ccitt_fax_label = Label(master=self.top, text="CCITTFaxDecode?")
+        self.ccitt_fax = Label(master=self.top, textvariable=self.ccitt_fax_var, relief=SUNKEN, width=20)
         self.raw_header_button = Button(master=self.top, text="Raw Object Header",
                                         command=self.raw_header_button_handler)
         self.save_body_button = Button(master=self.top, text="Save Object Body",
@@ -94,7 +97,9 @@ class ObjectBrowser:
         self.lzw.grid(column=3, row=7, padx=5, pady=5)
         self.jbig2_label.grid(column=2, row=8, padx=5, pady=5)
         self.jbig2.grid(column=3, row=8, padx=5, pady=5)
-        self.raw_header_button.grid(column=3, row=9, padx=5, pady=5)
+        self.ccitt_fax_label.grid(column=2, row=9, padx=5, pady=5)
+        self.ccitt_fax.grid(column=3, row=9, padx=5, pady=5)
+        self.raw_header_button.grid(column=3, row=10, padx=5, pady=5)
         self.save_body_button.grid(column=1, row=9, padx=5, pady=5)
         self.raw_body_button.grid(column=1, row=8, padx=5, pady=5)
 
@@ -118,6 +123,7 @@ class ObjectBrowser:
             if pdf_object.filter:
                 # extract filter section
                 raw_filters = pdf_object.object_header[pdf_object.object_header.find(b'/Filter') + 7:]
+                raw_filters = raw_filters.replace(b'\r\n', b' ')
                 filters = raw_filters.split(b' ')
                 # decode filters
                 for filter_text in filters:
@@ -133,6 +139,8 @@ class ObjectBrowser:
                         pdf_object.lzw_decode_action()
                     elif filter_text.find(b'/JBIG2Decode') != -1:
                         pdf_object.jbig2_decode_action()
+                    elif filter_text.find(b'/CCITTFaxDecode') != -1:
+                        pdf_object.ccitt_fax_decode_action()
         try:
             # set stringvars
             self.object_type_var.set(pdf_object.object_type)
@@ -143,6 +151,7 @@ class ObjectBrowser:
             self.run_length_var.set(str(pdf_object.run_length_decode))
             self.lzw_var.set(str(pdf_object.lzw_decode))
             self.jbig2_var.set(str(pdf_object.jbig2_decode))
+            self.ccitt_fax_var.set(str(pdf_object.ccitt_fax_decode))
 
             if pdf_object.decoded_stream != b'':
                 self.object_contents.configure(state=NORMAL)
