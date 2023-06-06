@@ -2,6 +2,7 @@ import binascii
 import zlib
 import struct
 import re
+from io import BytesIO
 
 
 class PdfObject:
@@ -33,7 +34,7 @@ class PdfObject:
         if self.obfuscated:
             self.deobfuscate()
         if self.object_header.replace(b'\r', b'').replace(b'\n', b'').find(b'/Type') != -1:
-            obj_type: bytes | list = self.object_header.replace(b'\n', b'').replace(b'\r', b'')
+            obj_type: bytes = self.object_header.replace(b'\n', b'').replace(b'\r', b'')
             obj_type = obj_type[self.object_header.find(b'/Type') + 5:]
             obj_type = obj_type.strip(b' ')
             obj_type = obj_type[obj_type.find(b'/') + 1:]
@@ -52,16 +53,18 @@ class PdfObject:
     def flate_decode_action(self):
         self.flate_decode = True
         if self.decoded_stream == b'':
-            stream = self.object_body[self.object_body.find(b'stream') + 6:]
-            stream = stream[: stream.find(b'endstream')]
-            stream = stream.strip(b'\r\n')
+            stream: bytes = self.object_body[re.search(b"stream", self.object_body).end():re.search(b"endstream", self.object_body).start()]
+            # stream = stream.strip()
         else:
             stream = self.decoded_stream
         try:
             self.decoded_stream: bytes = zlib.decompress(stream)
-        except zlib.error:
-            print("zLib Error")
-            pass
+        except zlib.error as e:
+            stream = stream[1:]
+            try:
+                self.decoded_stream: bytes = zlib.decompress(stream)
+            except zlib.error:
+                pass
         self.object_type: bytes = b'N/A'
 
     def ascii_hex_decode_action(self):
@@ -74,7 +77,10 @@ class PdfObject:
             stream = self.decoded_stream
         stream = stream.replace(b' ', b'').replace(b'\r', b'').replace(b'\n', b'')
         found = re.findall(b'[a-fA-F0-9]+>', stream)
-        stream = found[0].replace(b'>', b'')
+        try:
+            stream = found[0].replace(b'>', b'')
+        except IndexError:
+            pass
         self.decoded_stream = binascii.unhexlify(stream)
 
     def ascii_85_decode_action(self):
