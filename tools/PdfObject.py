@@ -88,6 +88,7 @@ class PdfObject:
             pass
 
     def ascii_85_decode_action(self):
+        # see LICENSE pdfminer.six this is his code
         # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
         self.ascii_85_decode = True
         if self.decoded_stream == b'':
@@ -121,6 +122,7 @@ class PdfObject:
         self.decoded_stream = out
 
     def run_length_decode_action(self):
+        # see LICENSE pdfminer.six this is his code
         # https://github.com/euske/pdfminer/blob/master/pdfminer/runlength.py
         self.run_length_decode = True
         if self.decoded_stream == b'':
