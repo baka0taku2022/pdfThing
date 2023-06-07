@@ -8,7 +8,7 @@ from tools.PdfObjectBody import PdfObjectBody
 class ObjectBrowser:
     def __init__(self, root: Tk, pdf_obj: PdfFile, title: str):
         self.top = Toplevel(master=root)
-        self.top.title(title + " - Object Browser")
+        self.top.title(title + " - Object Browser - " + str(pdf_obj.objects_count) + " objects found")
         self.pdf = pdf_obj
         self.obfuscated_var = StringVar()
         self.object_type_var = StringVar()
@@ -190,10 +190,13 @@ class ObjectBrowser:
         showinfo(title="Raw Header", message=self.current_header.decode(encoding="utf-8"))
 
     def save_object_body_button_handler(self):
-        file = asksaveasfile(mode="wb")
-        if file is not None:
-            file.write(self.current_object)
-            file.close()
+        if self.current_object.strip() != b'':
+            file = asksaveasfile(mode="wb")
+            if file is not None:
+                file.write(self.current_object)
+                file.close()
+        else:
+            showinfo(title="Save", message="Nothing to save.")
 
     def raw_body_button_handler(self):
         PdfObjectBody(self.raw_object_body, self.top)

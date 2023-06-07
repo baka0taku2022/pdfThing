@@ -2,7 +2,6 @@ import binascii
 import zlib
 import struct
 import re
-from io import BytesIO
 
 
 class PdfObject:
@@ -27,12 +26,14 @@ class PdfObject:
     def parse_object(self):
         self.object_header = self.raw_object[self.raw_object.find(b"<<") + 2: self.raw_object.find(b">>")]
         self.object_body = self.raw_object[self.raw_object.find(b">>") + 2:]
+        self.is_obfuscated()
+        if self.obfuscated:
+            self.object_header = self.deobfuscate(self.object_header)
+            self.object_body = self.deobfuscate(self.object_body)
+
 
     def parse_header(self):
         # get object type from header
-        self.is_obfuscated()
-        if self.obfuscated:
-            self.deobfuscate()
         if self.object_header.replace(b'\r', b'').replace(b'\n', b'').find(b'/Type') != -1:
             obj_type: bytes = self.object_header.replace(b'\n', b'').replace(b'\r', b'')
             obj_type = obj_type[self.object_header.find(b'/Type') + 5:]
@@ -53,17 +54,21 @@ class PdfObject:
     def flate_decode_action(self):
         self.flate_decode = True
         if self.decoded_stream == b'':
-            stream: bytes = self.object_body[re.search(b"stream", self.object_body).end():re.search(b"endstream", self.object_body).start()]
-            # stream = stream.strip()
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            stream = stream.strip(b'\r\n')
         else:
             stream = self.decoded_stream
         try:
             self.decoded_stream: bytes = zlib.decompress(stream)
         except zlib.error as e:
-            stream = stream[1:]
-            try:
+            if e.args[0].find('-3') != -1:  # bad header
+                stream = stream[1:]
                 self.decoded_stream: bytes = zlib.decompress(stream)
-            except zlib.error:
+            elif e.args[0].find('-5') != -1:  # truncated data
+                print("Flate Decode error: truncated data")
+                pass
+            else:
                 pass
         self.object_type: bytes = b'N/A'
 
@@ -75,13 +80,12 @@ class PdfObject:
             stream = stream.strip(b'\r\n')
         else:
             stream = self.decoded_stream
-        stream = stream.replace(b' ', b'').replace(b'\r', b'').replace(b'\n', b'')
-        found = re.findall(b'[a-fA-F0-9]+>', stream)
         try:
-            stream = found[0].replace(b'>', b'')
-        except IndexError:
+            stream = stream.replace(b'>', b'').replace(b' ', b'')
+            self.decoded_stream = binascii.unhexlify(stream)
+        except binascii.Error:
+
             pass
-        self.decoded_stream = binascii.unhexlify(stream)
 
     def ascii_85_decode_action(self):
         # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
@@ -155,6 +159,13 @@ class PdfObject:
 
     def dct_decode_action(self):
         self.dct_decode = True
+        if self.decoded_stream == b'':
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            self.decoded_stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream[self.decoded_stream.find(b'stream') + 6:]
+            self.decoded_stream = stream[: stream.find(b'endstream')]
 
     def is_obfuscated(self):
         regex = b"#[a-fA-F0-9][a-fA-F0-9]"
@@ -162,8 +173,8 @@ class PdfObject:
         if len(chars) > 0:
             self.obfuscated = True
 
-    def deobfuscate(self):
-        raw_data = self.object_header
+    def deobfuscate(self, data):
+        raw_data = data
         raw_data = raw_data.replace(b"#41", b'A')
         raw_data = raw_data.replace(b"#42", b'B')
         raw_data = raw_data.replace(b"#43", b'C')
@@ -216,4 +227,4 @@ class PdfObject:
         raw_data = raw_data.replace(b"#78", b'x')
         raw_data = raw_data.replace(b"#79", b'y')
         raw_data = raw_data.replace(b"#7a", b'z')
-        self.object_header = raw_data
+        return raw_data
