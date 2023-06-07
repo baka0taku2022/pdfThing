@@ -2,6 +2,7 @@ import binascii
 import zlib
 import struct
 import re
+from tools.lzw import *
 
 
 class PdfObject:
@@ -50,6 +51,14 @@ class PdfObject:
         # check for filters
         if self.object_header.find(b'/Filter') != -1:
             self.filter = True
+        # if not then just remove the stream tags if they are there
+        else:
+            if self.decoded_stream == b'':
+                if self.object_body.find(b'stream') != -1:
+                    stream = self.object_body[self.object_body.find(b'stream') + 6:]
+                    stream = stream[: stream.find(b'endstream')]
+                    stream = stream.strip(b'\r\n')
+                    self.decoded_stream = stream
 
     def flate_decode_action(self):
         self.flate_decode = True
@@ -67,7 +76,11 @@ class PdfObject:
                 self.decoded_stream: bytes = zlib.decompress(stream)
             elif e.args[0].find('-5') != -1:  # truncated data
                 print("Flate Decode error: truncated data")
-                pass
+                if self.decoded_stream == b'':
+                    stream = self.object_body[self.object_body.find(b'stream') + 6:]
+                    stream = stream[: stream.find(b'endstream')]
+                    stream = stream.strip(b'\r\n')
+                    self.decoded_stream = stream
             else:
                 pass
         self.object_type: bytes = b'N/A'
@@ -152,12 +165,29 @@ class PdfObject:
 
     def lzw_decode_action(self):
         self.lzw_decode = True
+        if self.decoded_stream == b'':
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream
+        self.decoded_stream = lzwdecode(stream)
 
     def jbig2_decode_action(self):
+        # Do we need to decode?
         self.jbig2_decode = True
+        if self.decoded_stream == b'':
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            stream = stream.strip(b'\r\n')
 
     def ccitt_fax_decode_action(self):
+        # Do we need to decode?
         self.ccitt_fax_decode = True
+        if self.decoded_stream == b'':
+            stream = self.object_body[self.object_body.find(b'stream') + 6:]
+            stream = stream[: stream.find(b'endstream')]
+            stream = stream.strip(b'\r\n')
 
     def dct_decode_action(self):
         self.dct_decode = True
@@ -165,9 +195,6 @@ class PdfObject:
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
             stream = stream[: stream.find(b'endstream')]
             self.decoded_stream = stream.strip(b'\r\n')
-        else:
-            stream = self.decoded_stream[self.decoded_stream.find(b'stream') + 6:]
-            self.decoded_stream = stream[: stream.find(b'endstream')]
 
     def is_obfuscated(self):
         regex = b"#[a-fA-F0-9][a-fA-F0-9]"
