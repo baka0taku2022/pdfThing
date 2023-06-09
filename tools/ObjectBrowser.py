@@ -4,6 +4,7 @@ from tkinter.messagebox import showinfo
 from tools.PdfFile import PdfFile
 from tools.PdfObject import PdfObject
 from tools.PdfObjectBody import PdfObjectBody
+from tools.PdfJpg import PdfJpg
 
 class ObjectBrowser:
     def __init__(self, root: Tk, pdf_obj: PdfFile, title: str):
@@ -72,6 +73,7 @@ class ObjectBrowser:
         self.save_body_button = Button(master=self.top, text="Save Object Body",
                                        command=self.save_object_body_button_handler)
         self.raw_body_button = Button(master=self.top, text="Raw Object Body", command=self.raw_body_button_handler)
+        self.img_view_button = Button(master=self.top, text="View Image", command=self.img_view_button_handler)
 
         # add objects to list
         self.obj_list.insert(END, *sorted(list(self.pdf.object_ids)))
@@ -112,6 +114,7 @@ class ObjectBrowser:
         self.raw_header_button.grid(column=4, row=0, padx=5, pady=5)
         self.save_body_button.grid(column=4, row=1, padx=5, pady=5)
         self.raw_body_button.grid(column=4, row=2, padx=5, pady=5)
+        self.img_view_button.grid(column=4, row=3, padx=5, pady=5)
 
     def list_handle(self, event):
         try:
@@ -200,3 +203,8 @@ class ObjectBrowser:
 
     def raw_body_button_handler(self):
         PdfObjectBody(self.raw_object_body, self.top)
+
+    def img_view_button_handler(self):
+        # check for jpg magic number
+        if self.current_object[0:3] == b'\xff\xd8\xff':
+            PdfJpg(self.top, self.current_object)

@@ -3,7 +3,7 @@ from tkinter import *
 from tools import PdfFile, ObjectBrowser
 
 # make root window
-program_title = "pdfThing 0.3"
+program_title = "pdfThing 0.4"
 root = Tk()
 root.title(program_title)
 
