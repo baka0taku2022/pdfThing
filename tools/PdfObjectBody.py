@@ -1,5 +1,6 @@
 from tkinter import *
 
+
 class PdfObjectBody:
     def __init__(self, object_body: bytes, parent: Toplevel):
         self.obj_body = object_body
@@ -19,6 +20,7 @@ class PdfObjectBody:
         self.body.insert(END, self.obj_body)
         self.body.configure(state=DISABLED)
 
+        # place widgets
         self.obj_frame.pack()
         self.body.pack(side=LEFT)
         self.body_scroll.pack(side=RIGHT, fill=BOTH)

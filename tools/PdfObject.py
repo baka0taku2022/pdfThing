@@ -6,6 +6,9 @@ from tools.lzw import *
 
 
 class PdfObject:
+    """
+    Separate header and object, attempt to decode if encoded
+    """
     def __init__(self, raw_object: bytes):
         self.raw_object: bytes = raw_object
         self.object_header: bytes = b''
@@ -24,7 +27,7 @@ class PdfObject:
         self.ccitt_fax_decode: bool = False
         self.dct_decode: bool = False
 
-    def parse_object(self):
+    def parse_object(self) -> None:
         self.object_header = self.raw_object[self.raw_object.find(b"<<") + 2: self.raw_object.find(b">>")]
         self.object_body = self.raw_object[self.raw_object.find(b">>") + 2:]
         self.is_obfuscated()
@@ -33,7 +36,7 @@ class PdfObject:
             self.object_body = self.deobfuscate(self.object_body)
 
 
-    def parse_header(self):
+    def parse_header(self) -> None:
         # get object type from header
         if self.object_header.replace(b'\r', b'').replace(b'\n', b'').find(b'/Type') != -1:
             obj_type: bytes = self.object_header.replace(b'\n', b'').replace(b'\r', b'')
@@ -47,7 +50,7 @@ class PdfObject:
         else:
             self.object_type = b'N/A'
 
-    def check_filters(self):
+    def check_filters(self) -> None:
         # check for filters
         if self.object_header.find(b'/Filter') != -1:
             self.filter = True
@@ -60,7 +63,7 @@ class PdfObject:
                     stream = stream.strip(b'\r\n')
                     self.decoded_stream = stream
 
-    def flate_decode_action(self):
+    def flate_decode_action(self) -> None:
         self.flate_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
@@ -85,7 +88,7 @@ class PdfObject:
                 pass
         self.object_type: bytes = b'N/A'
 
-    def ascii_hex_decode_action(self):
+    def ascii_hex_decode_action(self) -> None:
         self.ascii_hex_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
@@ -97,10 +100,10 @@ class PdfObject:
             stream = stream.replace(b'>', b'').replace(b' ', b'')
             self.decoded_stream = binascii.unhexlify(stream)
         except binascii.Error:
-
+            print("BinAscii decode error")
             pass
 
-    def ascii_85_decode_action(self):
+    def ascii_85_decode_action(self) -> None:
         # see LICENSE pdfminer.six this is his code
         # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
         self.ascii_85_decode = True
@@ -134,7 +137,7 @@ class PdfObject:
                 break
         self.decoded_stream = out
 
-    def run_length_decode_action(self):
+    def run_length_decode_action(self) -> None:
         # see LICENSE pdfminer.six this is his code
         # https://github.com/euske/pdfminer/blob/master/pdfminer/runlength.py
         self.run_length_decode = True
@@ -163,7 +166,7 @@ class PdfObject:
                 i = (i + 1) + 1
         self.decoded_stream = decoded
 
-    def lzw_decode_action(self):
+    def lzw_decode_action(self) -> None:
         self.lzw_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
@@ -173,7 +176,7 @@ class PdfObject:
             stream = self.decoded_stream
         self.decoded_stream = lzwdecode(stream)
 
-    def jbig2_decode_action(self):
+    def jbig2_decode_action(self) -> None:
         # Do we need to decode?
         self.jbig2_decode = True
         if self.decoded_stream == b'':
@@ -181,7 +184,7 @@ class PdfObject:
             stream = stream[: stream.find(b'endstream')]
             stream = stream.strip(b'\r\n')
 
-    def ccitt_fax_decode_action(self):
+    def ccitt_fax_decode_action(self) -> None:
         # Do we need to decode?
         self.ccitt_fax_decode = True
         if self.decoded_stream == b'':
@@ -189,20 +192,20 @@ class PdfObject:
             stream = stream[: stream.find(b'endstream')]
             stream = stream.strip(b'\r\n')
 
-    def dct_decode_action(self):
+    def dct_decode_action(self) -> None:
         self.dct_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
             stream = stream[: stream.find(b'endstream')]
             self.decoded_stream = stream.strip(b'\r\n')
 
-    def is_obfuscated(self):
+    def is_obfuscated(self) -> None:
         regex = b"#[a-fA-F0-9][a-fA-F0-9]"
         chars = re.findall(regex, self.object_header)
         if len(chars) > 0:
             self.obfuscated = True
 
-    def deobfuscate(self, data):
+    def deobfuscate(self, data) -> bytes:
         raw_data = data
         raw_data = raw_data.replace(b"#41", b'A')
         raw_data = raw_data.replace(b"#42", b'B')

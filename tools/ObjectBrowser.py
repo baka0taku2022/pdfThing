@@ -6,7 +6,11 @@ from tools.PdfObject import PdfObject
 from tools.PdfObjectBody import PdfObjectBody
 from tools.PdfJpg import PdfJpg
 
+
 class ObjectBrowser:
+    """
+    Used to browse objects in a PDF file
+    """
     def __init__(self, root: Tk, pdf_obj: PdfFile, title: str):
         self.top = Toplevel(master=root)
         self.top.title(title + " - Object Browser - " + str(pdf_obj.objects_count) + " objects found")

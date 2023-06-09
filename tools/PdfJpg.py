@@ -3,7 +3,11 @@ from io import BytesIO
 import PIL.ImageTk
 import PIL.Image as Img
 
+
 class PdfJpg:
+    """
+    Class to view a jpeg from a raw byte string
+    """
     def __init__(self, root: Toplevel, raw_object: bytes):
         self.raw = raw_object
         self.root = root
