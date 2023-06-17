@@ -1,7 +1,8 @@
 import binascii
-import zlib
-import struct
 import re
+import zlib
+from base64 import a85decode
+
 from tools.lzw import *
 
 
@@ -9,6 +10,7 @@ class PdfObject:
     """
     Separate header and object, attempt to decode if encoded
     """
+
     def __init__(self, raw_object: bytes):
         self.raw_object: bytes = raw_object
         self.object_header: bytes = b''
@@ -26,6 +28,7 @@ class PdfObject:
         self.decoded_stream: bytes = b''
         self.ccitt_fax_decode: bool = False
         self.dct_decode: bool = False
+        self.indirect_objects: list = list()
 
     def parse_object(self) -> None:
         self.object_header = self.raw_object[self.raw_object.find(b"<<") + 2: self.raw_object.find(b">>")]
@@ -34,7 +37,6 @@ class PdfObject:
         if self.obfuscated:
             self.object_header = self.deobfuscate(self.object_header)
             self.object_body = self.deobfuscate(self.object_body)
-
 
     def parse_header(self) -> None:
         # get object type from header
@@ -104,8 +106,6 @@ class PdfObject:
             pass
 
     def ascii_85_decode_action(self) -> None:
-        # see LICENSE pdfminer.six this is his code
-        # https://github.com/euske/pdfminer/blob/master/pdfminer/ascii85.py
         self.ascii_85_decode = True
         if self.decoded_stream == b'':
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
@@ -113,28 +113,8 @@ class PdfObject:
             stream = stream.strip(b'\r\n')
         else:
             stream = self.decoded_stream
-        n = b = 0
         out = b''
-        for c in stream:
-            if 33 <= c and c <= 117:  # b'!' <= c and c <= b'u'
-                n += 1
-                b = b * 85 + (c - 33)
-                if n == 5:
-                    try:
-                        out += struct.pack('>L', b)
-                    except struct.error:
-                        print("Error while ASCII 85 Decoding")
-                        pass
-                    n = b = 0
-            elif c == 122:  # b'z'
-                # assert n == 0
-                out += b'\0\0\0\0'
-            elif c == 126:  # b'~'
-                if n:
-                    for _ in range(5 - n):
-                        b = b * 85 + 84
-                    out += struct.pack('>L', b)[:n - 1]
-                break
+        out = a85decode(b=stream, adobe=True)
         self.decoded_stream = out
 
     def run_length_decode_action(self) -> None:
@@ -183,6 +163,9 @@ class PdfObject:
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
             stream = stream[: stream.find(b'endstream')]
             stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream
+        self.decoded_stream = stream
 
     def ccitt_fax_decode_action(self) -> None:
         # Do we need to decode?
@@ -191,6 +174,9 @@ class PdfObject:
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
             stream = stream[: stream.find(b'endstream')]
             stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream
+        self.decoded_stream = stream
 
     def dct_decode_action(self) -> None:
         self.dct_decode = True
@@ -198,6 +184,9 @@ class PdfObject:
             stream = self.object_body[self.object_body.find(b'stream') + 6:]
             stream = stream[: stream.find(b'endstream')]
             self.decoded_stream = stream.strip(b'\r\n')
+        else:
+            stream = self.decoded_stream
+        self.decoded_stream = stream
 
     def is_obfuscated(self) -> None:
         regex = b"#[a-fA-F0-9][a-fA-F0-9]"

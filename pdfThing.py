@@ -1,6 +1,7 @@
-from tkinter import Tk, StringVar, Label, Entry, Button, filedialog, SUNKEN
+from tkinter import Tk, StringVar, Label, Entry, Button, filedialog, SUNKEN, Frame, LEFT, RIGHT
 from tools.PdfFile import PdfFile
 from tools.ObjectBrowser import ObjectBrowser
+from tools.ObjectTree import ObjectTree
 from typing import IO
 
 # make root window
@@ -25,7 +26,7 @@ def file_button_handler() -> None:
         entry_text.set(str(file_name.name))
 
 
-def ok_button_handler() -> None:
+def ob_button_handler() -> None:
     """
     Open file, read bytes, get PDF structure and enter object browser
     :return: None
@@ -42,18 +43,29 @@ def ok_button_handler() -> None:
             pass
 
 
+def ot_button_handler() -> None:
+    try:
+        with open(entry_text.get(), "rb") as fh:
+            ObjectTree(root=root, file=fh)
+    except FileNotFoundError:
+        pass
+
+
 # create widgets
 file_label = Label(master=root, text="Path to PDF")
 file_entry = Entry(master=root, width=50, textvariable=entry_text, relief=SUNKEN)
 file_button = Button(master=root, text="Select File", command=file_button_handler)
-file_ok = Button(master=root, text="Enter Object Browser", width=50, command=ok_button_handler)
+button_frame = Frame(master=root)
+file_ob = Button(master=button_frame, text="Enter Object Browser", command=ob_button_handler)
+file_ot = Button(master=button_frame, text="Enter Object Tree", command=ot_button_handler)
 
 # place widgets
 file_label.grid(row=0, column=0, padx=10, pady=10)
 file_entry.grid(row=0, column=1, padx=10, pady=10)
 file_button.grid(row=0, column=2, padx=10, pady=10)
-file_ok.grid(row=1, column=0, columnspan=3, padx=10, pady=10)
-
+button_frame.grid(row=1, column=1)
+file_ob.pack(side=LEFT)
+file_ot.pack(side=RIGHT)
 # Start graphics
 if __name__ == '__main__':
     root.mainloop()
